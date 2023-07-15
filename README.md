@@ -34,4 +34,4 @@ ___P.s. I note that the contact always knows whether they have connected to it, 
 
 ## __Extra__
 ---
-Description of package functions can be found [___here___]()
+Description of package functions can be found [___here___](https://github.com/RePlay-h/WireWay-packets)
