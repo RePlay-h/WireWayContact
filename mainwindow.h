@@ -1,30 +1,23 @@
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 
+#define S_ADDRESS "127.0.0.1"
+
 #include <QMainWindow>
 #include <QPixmap>
 #include <QMessageBox>
 #include <QScreen>
+#include <QTcpSocket>
+#include <QUdpSocket>
+#include <QTimer>
+#include <QThread>
+#include <QRandomGenerator>
+#include <QNetworkDatagram>
+#include <QIcon>
 
-#include <thread>
-#include <chrono>
-#include <random>
-
-#include <boost/asio/io_context.hpp>
-#include <boost/asio/ip/tcp.hpp>
-#include <boost/asio/buffer.hpp>
-#include <boost/asio/use_future.hpp>
-#include <boost/asio/use_awaitable.hpp>
-#include <boost/asio/co_spawn.hpp>
-#include <boost/asio/detached.hpp>
-#include <boost/system/error_code.hpp>
-#include <boost/asio/redirect_error.hpp>
-
-#include "handlers/handlers.h"
-
-using namespace boost;
-using namespace std::chrono_literals;
-using asio::ip::tcp;
+#include "utilities/creators.h"
+#include "utilities/key_iteraction.h"
+#include "utilities/mouse_iteraction.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -35,36 +28,71 @@ class MainWindow : public QMainWindow
     Q_OBJECT
 
 public:
-    MainWindow(tcp::endpoint endpoint, QWidget *parent = nullptr);
 
-    void RunIo();
+    MainWindow(QWidget *parent = nullptr);
 
-    void Start();
+    void Start(QString address);
 
-    bool SendConnectPacket();
+    void ErrorHandler(QAbstractSocket::SocketError socketError);
 
-    bool GetConnackPacket();
+    void DestroyTcpConnection();
 
-    asio::awaitable<void> SendScreens();
+    // functions for interacting with the server
+
+    void ReadyReadSlot();
+
+    void PacketHandler();
+
+    // functions for p2p connection
+
+    void ChangeSocket(QString address);
 
     ~MainWindow();
 
 private slots:
+
+
+    void SendConnectPacket();
+
     void on_Connect_clicked();
+
+    void SendScreens(); // send screen to server
+
+    void SendScreen(); // send screen to user
+
+    void ReadyReadCommand(); // read command
 
 private:
     Ui::MainWindow *ui;
 
-    uint16_t id_;
+    QTcpSocket *sock_; // to communicate with the server
 
-    asio::io_context io_;
-    asio::io_context::work work_{io_};
+    QUdpSocket *socket_; // to communicate with the user
 
-    tcp::endpoint endpoint_;
+    QTimer timer_; // timer for SendScreens and SendScreen slots
 
-    tcp::socket sock_;
+    // packet
 
-    std::thread thr_;
+    quint8 pkt_type_; // packet type
+
+    quint32 pkt_size_; // packet size
+
+    QByteArray remain_part_; // remaining part
+
+    // information for QUdpSocket
+
+    QString address_; // user address
+
+    quint16 port_; // user port
+
+
+    quint16 id_; // contact id
+
+    quint8 scr_id_; // screen packet id
+
+    QList<QByteArray> packets_;
 
 };
+
+
 #endif // MAINWINDOW_H

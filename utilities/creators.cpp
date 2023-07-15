@@ -1,11 +1,12 @@
-#include "handlers.h"
+#include "creators.h"
 
-void utilities::CreateConnectPacket(QByteArray &buf, uint16_t id)
+void utilities::CreateConnectPacket(QByteArray &buf, quint16 &id)
 {
     buf.resize(7);
 
     //type
     buf[0] = CONNECT_BYTE;
+    buf[0] |= 0x01;
 
     //size
     buf[1] = 0x00;
@@ -18,7 +19,7 @@ void utilities::CreateConnectPacket(QByteArray &buf, uint16_t id)
     buf[6] = id;
 }
 
-void utilities::CreateScreenPackets(QList<QByteArray> &screens, uint16_t &id) {
+void utilities::CreateScreenPackets(QList<QByteArray> &screens, quint16 &id) {
 
 
     QScreen* display = QGuiApplication::primaryScreen();
@@ -32,8 +33,6 @@ void utilities::CreateScreenPackets(QList<QByteArray> &screens, uint16_t &id) {
     unsigned char *buf = img.bits();
 
     size_t size_of_screen = img.sizeInBytes();
-
-    size_t f = 1;
 
     while(size_of_screen != 0) {
 
@@ -70,48 +69,48 @@ void utilities::CreateScreenPackets(QList<QByteArray> &screens, uint16_t &id) {
 
         size_of_screen -= step;
         buf += step;
-        f++;
     }
 }
 
-void utilities::CreateScreen(QList<QByteArray> &screens) {
+void utilities::CreateScreen(QList<QByteArray> &screens, quint8 id) {
 
     QScreen* display = QGuiApplication::primaryScreen();
     QPixmap ScreenShot = display->grabWindow(0);
 
-    QImage img;
-    img = ScreenShot.toImage();
-    img = img.scaled(1600, 900);
+    ScreenShot = ScreenShot.scaled(1600, 900, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
 
-    qDebug() << "SCALED" << img.size().height() * img.size().width();
+    QByteArray bytes;
 
-    unsigned char *buf = img.bits();
+    QBuffer buffer(&bytes);
 
-    size_t size_of_screen = img.sizeInBytes();
+    ScreenShot.save(&buffer, "JPEG");
 
-    while(size_of_screen != 0) {
+    const char* b = bytes.constData();
 
-        screens.push_back(QByteArray());
-        auto& scr = screens.back();
+    qsizetype bytes_size = bytes.size();
+
+    quint8 i = 0;
+
+    quint8 n_pkt = std::ceil(double(bytes_size) / 57600);
 
 
-        if(size_of_screen > 57600) {
+    while(bytes_size >= 0) {
 
-            for(size_t i = 0; i < 57600; ++i) {
-                scr.push_back(*buf);
-                buf++;
-            }
-            size_of_screen -= 57600;
-        }
+        QByteArray scr;
 
-        else {
-            for(size_t i = 0; i < size_of_screen; ++i) {
-                scr.push_back(*buf);
-                buf++;
-            }
-            size_of_screen -= size_of_screen;
-        }
+        scr.append(id);
+        scr.append(i);
+        scr.append(n_pkt);
 
+        scr.append(b, bytes_size > 57600 ? 57600 : bytes_size);
+
+        b += bytes_size > 57600 ? 57600 : bytes_size;
+
+        bytes_size -= 57600;
+
+        screens.push_back(std::move(scr));
+
+        ++i;
     }
 
 }
@@ -128,3 +127,5 @@ void utilities::CreateDisconnectPacket(QByteArray &buf) {
     buf[3] = 0x00;
     buf[4] = 0x00;
 }
+
+

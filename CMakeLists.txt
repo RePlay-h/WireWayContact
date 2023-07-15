@@ -12,17 +12,21 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 
-find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets)
-find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets)
-find_package(Boost REQUIRED)
+find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets Network)
+find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets Network)
 
 set(PROJECT_SOURCES
         main.cpp
         mainwindow.cpp
         mainwindow.h
         mainwindow.ui
-        handlers/handlers.cpp
-        handlers/handlers.h
+        utilities/creators.cpp
+        utilities/creators.h
+        utilities/mouse_iteraction.h
+        utilities/mouse_iteraction.cpp
+        utilities/key_iteraction.h
+        utilities/key_iteraction.cpp
+        resourse.qrc
 )
 
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
@@ -48,11 +52,8 @@ else()
     endif()
 endif()
 
-target_link_libraries(WireWayContact PRIVATE Qt${QT_VERSION_MAJOR}::Widgets)
+target_link_libraries(WireWayContact PRIVATE Qt${QT_VERSION_MAJOR}::Widgets Qt${QT_VERSION_MAJOR}::Network)
 
-target_include_directories(WireWayContact PRIVATE ${Boost_INCLUDE_DIRS})
-
-target_link_libraries(WireWayContact PRIVATE ${Boost_LIBRARIES})
 
 set_target_properties(WireWayContact PROPERTIES
     MACOSX_BUNDLE_GUI_IDENTIFIER my.example.com
